@@ -1,0 +1,6 @@
+src/
+src/examples/
+tsup.config.ts
+tsconfig.json
+*.pdf
+node_modules/
