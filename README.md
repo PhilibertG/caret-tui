@@ -33,13 +33,13 @@ import { CaretProvider, Box, Text, Card, Badge } from 'caret-tui';
 const App = () => (
   <CaretProvider initialTheme="shadcn">
     <Box padding={2} flexDirection="column">
-      <Card title="Hello Terminal" width={40}>
+      <Card title="Hello Terminal">
         <Box flexDirection="column" gap={1}>
           <Text>Welcome to the future of TUI development.</Text>
           <Box gap={1}>
-            <Badge label="React" variant="success" />
-            <Badge label="Ink" variant="primary" />
-            <Badge label="Caret" variant="secondary" />
+            <Badge variant="success">React</Badge>
+            <Badge variant="primary">Ink</Badge>
+            <Badge variant="secondary">Caret</Badge>
           </Box>
         </Box>
       </Card>
