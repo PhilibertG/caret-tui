@@ -33,7 +33,7 @@ import { CaretProvider, Box, Text, Card, Badge } from 'caret-tui';
 const App = () => (
   <CaretProvider initialTheme="shadcn">
     <Box padding={2} flexDirection="column">
-      <Card title="Hello Terminal">
+      <Card title="Hello Terminal" width={40}>
         <Box flexDirection="column" gap={1}>
           <Text>Welcome to the future of TUI development.</Text>
           <Box gap={1}>
@@ -61,6 +61,7 @@ Caret-TUI includes a comprehensive set of components for building complex termin
 - **Overlay**: Layering system for modals and notifications.
 
 ### Data Display
+- **Text**: Component for text rendering and formatting.
 - **Badge**: Small status indicators or tags.
 - **Card**: Box with a border and optional title.
 - **DataTable**: Tabular data display with column headers.
@@ -77,6 +78,35 @@ Caret-TUI includes a comprehensive set of components for building complex termin
 - **StepWizard**: Multi-step process orchestration.
 - **SearchModal**: Full-screen searchable list interface.
 
+## Providers & Context
+
+Caret-TUI relies on providers to handle themes, focus, and notifications across your application.
+
+- **CaretProvider**: Handles theming. Wrap your app in this provider to use themes. Accessible via `useCaret()`.
+- **FocusProvider**: Handles keyboard navigation between interactive components effortlessly. Accessible via `useFocus()`.
+- **NotificationProvider**: Handles toast-like notifications. Accessible via `useNotify()`.
+
+```tsx
+import { FocusProvider, CaretProvider, NotificationProvider } from 'caret-tui';
+
+const AppRoot = () => (
+  <FocusProvider>
+    <CaretProvider initialTheme="dracula">
+      <NotificationProvider>
+        <App />
+      </NotificationProvider>
+    </CaretProvider>
+  </FocusProvider>
+);
+```
+
+## Hooks
+
+- **useCaret**: Access the current theme and the `setTheme` function.
+- **useFocus**: Access focus management and register focusable elements.
+- **useNotify**: Trigger notifications using `notify(message, type)`.
+- **useKeyboard**: A utility hook to easily handle keyboard events like `onUp`, `onDown`, `onEnter`, `onEscape`, etc.
+
 ## Theming
 
 Caret-TUI comes with several built-in themes to match your terminal's aesthetic. You can easily switch themes or provide your own.
@@ -86,26 +116,6 @@ Available themes:
 - **matrix**: Classic green on black terminal look.
 - **dracula**: Popular purple-toned dark theme.
 - **cyberpunk**: High-contrast neon yellow and green theme.
-
-To use a theme, wrap your application in the `CaretProvider`:
-
-```tsx
-<CaretProvider initialTheme="dracula">
-  <App />
-</CaretProvider>
-```
-
-## Focus Management
-
-Caret-TUI includes a `FocusProvider` to handle keyboard navigation between interactive components effortlessly.
-
-```tsx
-<FocusProvider>
-  <CaretProvider>
-    <App />
-  </CaretProvider>
-</FocusProvider>
-```
 
 ## Development
 
