@@ -135,4 +135,80 @@ describe('Select', () => {
     await s.press('k');
     expect(s.focused()).toBe('Annuler');
   });
+
+  describe('avec typeahead', () => {
+    const actions: SelectOption[] = [
+      { label: 'Annuler', value: 'annuler' },
+      { label: 'Éditer', value: 'editer' },
+      { label: 'Envoyer', value: 'envoyer', disabled: true },
+      { label: 'Exporter', value: 'exporter' },
+      { label: 'Joindre', value: 'joindre' },
+      { label: 'Kiosque', value: 'kiosque' },
+    ];
+
+    it('ne réagit pas aux lettres quand l’option est coupée', async () => {
+      const s = setup({ options: actions });
+      await tick();
+      await s.press('e');
+      expect(s.focused()).toBe('Annuler');
+    });
+
+    it('saute à l’option qui commence par la lettre, accents ignorés', async () => {
+      const s = setup({ options: actions, typeahead: true });
+      await tick();
+      await s.press('e');
+      expect(s.focused()).toBe('Éditer');
+    });
+
+    it('saute les options désactivées', async () => {
+      const s = setup({ options: actions, typeahead: true });
+      await tick();
+      await s.press('e', 'e');
+      expect(s.focused()).toBe('Exporter');
+    });
+
+    it('j et k cherchent une option au lieu de déplacer le curseur', async () => {
+      const s = setup({ options: actions, typeahead: true });
+      await tick();
+      await s.press('j');
+      expect(s.focused()).toBe('Joindre');
+      await tick(600);
+      await s.press('k');
+      expect(s.focused()).toBe('Kiosque');
+    });
+
+    it('garde les flèches, ctrl+d et Entrée', async () => {
+      const s = setup({ options: actions, typeahead: true });
+      await tick();
+      await s.press('e', KEY.down, KEY.down, KEY.enter);
+      expect(s.onSelect).toHaveBeenCalledWith('exporter');
+      await s.press(KEY.ctrlD);
+      expect(s.focused()).toBe('Kiosque');
+    });
+
+    it('valide avec Entrée juste après une recherche', async () => {
+      const s = setup({ options: actions, typeahead: true });
+      await tick();
+      await s.press('j', KEY.enter);
+      expect(s.onSelect).toHaveBeenCalledTimes(1);
+      expect(s.onSelect).toHaveBeenCalledWith('joindre');
+    });
+
+    it('fait défiler la fenêtre jusqu’à une option hors écran', async () => {
+      const options = [...many, { label: 'Zèbre', value: 'z' }];
+      const s = setup({ options, visibleCount: 4, typeahead: true });
+      await tick();
+      expect(s.lastFrame()).not.toContain('Zèbre');
+      await s.press('z');
+      expect(s.focused()).toBe('Zèbre');
+      expect(s.lastFrame()).toContain('▲ 9 more');
+    });
+
+    it('adapte la ligne d’aide', async () => {
+      const s = setup({ options: actions, typeahead: true });
+      await tick();
+      expect(s.lastFrame()).toContain('type to search');
+      expect(s.lastFrame()).not.toContain('jk');
+    });
+  });
 });

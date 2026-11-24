@@ -3,6 +3,7 @@ import { useInput } from 'ink';
 import { Box } from './Box.js';
 import { Text } from './Text.js';
 import { useCaret } from '../CaretProvider.js';
+import { useTypeahead } from '../../behaviors/typeahead/index.js';
 
 // --- Types ---
 
@@ -20,6 +21,11 @@ interface SelectProps<T = string> {
   label?: string;
   visibleCount?: number;
   isActive?: boolean;
+  /**
+   * Type letters to jump to the option that starts with them. When on,
+   * `j` and `k` are letters like any other and no longer move the cursor.
+   */
+  typeahead?: boolean;
 }
 
 // --- Reducer ---
@@ -36,6 +42,7 @@ type SelectAction =
   | { type: 'page_down'; optionCount: number; visibleCount: number }
   | { type: 'go_first' }
   | { type: 'go_last'; optionCount: number; visibleCount: number }
+  | { type: 'focus'; index: number; optionCount: number; visibleCount: number }
   | { type: 'reset'; optionCount: number; visibleCount: number };
 
 function clampViewport(focusIndex: number, viewportStart: number, visibleCount: number, optionCount: number): SelectState {
@@ -73,6 +80,8 @@ function selectReducer(state: SelectState, action: SelectAction): SelectState {
       const focus = action.optionCount - 1;
       return clampViewport(focus, state.viewportStart, action.visibleCount, action.optionCount);
     }
+    case 'focus':
+      return clampViewport(action.index, state.viewportStart, action.visibleCount, action.optionCount);
     case 'reset':
       return clampViewport(0, 0, action.visibleCount, action.optionCount);
     default:
@@ -89,6 +98,7 @@ export function Select<T = string>({
   label,
   visibleCount = 8,
   isActive = true,
+  typeahead = false,
 }: SelectProps<T>) {
   const { theme } = useCaret();
   const effectiveVisible = Math.min(visibleCount, options.length);
@@ -107,8 +117,21 @@ export function Select<T = string>({
     }
   }, [options.length, effectiveVisible]);
 
+  const search = useTypeahead({
+    labels: options.map(o => o.label),
+    current: state.focusIndex,
+    isDisabled: index => options[index]?.disabled ?? false,
+    isActive: isActive && typeahead,
+    onMatch: index => {
+      dispatch({ type: 'focus', index, optionCount: options.length, visibleCount: effectiveVisible });
+    },
+  });
+
   useInput((input, key) => {
     if (!isActive) return;
+
+    // Letters go to the typeahead first; it leaves arrows, Enter and ctrl+key alone.
+    if (search.handleInput(input, key)) return;
 
     if (key.upArrow || input === 'k') {
       if (options.every(o => o.disabled)) return;
@@ -203,7 +226,7 @@ export function Select<T = string>({
       </Box>
 
       <Box marginTop={0} paddingX={1}>
-        <Text dimColor>↑↓/jk navigate · Enter select{onCancel ? ' · Esc cancel' : ''}</Text>
+        <Text dimColor>{typeahead ? '↑↓ navigate · type to search' : '↑↓/jk navigate'} · Enter select{onCancel ? ' · Esc cancel' : ''}</Text>
       </Box>
     </Box>
   );

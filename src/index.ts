@@ -31,6 +31,14 @@ export { NotificationProvider, useNotify } from './components/ui/NotificationPro
 // Hooks
 export { useKeyboard } from './hooks/useKeyboard.js';
 
+// Behaviors (no styling, no dependency on the components above)
+export { useTypeahead } from './behaviors/typeahead/index.js';
+export type {
+  TypeaheadKey,
+  UseTypeaheadOptions,
+  UseTypeaheadResult,
+} from './behaviors/typeahead/index.js';
+
 // Theme
 export { colors } from './theme/colors.js';
 export type { ColorTheme } from './theme/colors.js';
