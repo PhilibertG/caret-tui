@@ -36,7 +36,7 @@ export const Card: React.FC<CardProps> = ({
       width="100%"
     >
       {title && (
-        <Box marginTop={-1} paddingX={1} backgroundColor={theme.background}>
+        <Box marginTop={-1} marginX={1} alignSelf="flex-start" backgroundColor={theme.background}>
           <Text bold variant={variant === 'default' ? 'primary' : variant}>
             {` ${title.toUpperCase()} `}
           </Text>
@@ -48,7 +48,7 @@ export const Card: React.FC<CardProps> = ({
       </Box>
 
       {footer && (
-        <Box marginBottom={-1} paddingX={1} backgroundColor={theme.background} alignSelf="flex-end">
+        <Box marginBottom={-1} marginX={1} backgroundColor={theme.background} alignSelf="flex-end">
           <Text dimColor italic variant="muted">
             {` ${footer} `}
           </Text>
