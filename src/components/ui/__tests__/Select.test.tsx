@@ -17,8 +17,9 @@ const KEY = {
   end: '\u001B[F',
 };
 
-// Laisse à Ink le temps de lire la touche et de redessiner.
-const tick = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
+// Laisse à Ink le temps de lire la touche et de redessiner. 30 ms ne suffisaient
+// pas toujours : selon la charge de la machine, des tests échouaient au hasard.
+const tick = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const fruits: SelectOption[] = [
   { label: 'Annuler', value: 'annuler' },
