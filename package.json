@@ -37,12 +37,15 @@
         "README.md"
     ],
     "scripts": {
+        "predev": "npm run sync:behaviors",
         "dev": "tsx src/examples/demo.tsx",
+        "prebuild": "npm run sync:behaviors",
         "build": "tsup",
         "prepublishOnly": "npm run build",
         "test": "vitest run",
+        "pretypecheck": "npm run sync:behaviors",
         "typecheck": "tsc --noEmit",
-        "sync:behaviors": "npm --prefix ../ink-behaviors run build && rm -rf node_modules/ink-behaviors && npm install"
+        "sync:behaviors": "node scripts/sync-behaviors.mjs"
     },
     "keywords": [
         "terminal",

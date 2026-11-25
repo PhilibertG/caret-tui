@@ -128,12 +128,14 @@ If you want to contribute or run the demo locally:
 
 ### Local `ink-behaviors`
 
-`Select` gets its type-to-select from [`ink-behaviors`](../ink-behaviors), which
-is not on npm yet. For now caret-tui uses the folder next to it
-(`../ink-behaviors`), copied into `node_modules` at install time.
+`Select` and `ScrollableList` get their keyboard behavior from
+[`ink-behaviors`](../ink-behaviors), which is not on npm yet. For now caret-tui
+uses the folder next to it (`../ink-behaviors`), copied into `node_modules`.
 
-- First time, in `../ink-behaviors`: `npm install`
-- Then here, and again after every change in `ink-behaviors`: `npm run sync:behaviors`
+The copy is kept up to date for you: `npm test` (and `vitest` run directly),
+`npm run dev`, `npm run build` and `npm run typecheck` first rebuild
+`ink-behaviors` if its sources changed, then refresh the copy if it differs.
+To do it by hand: `npm run sync:behaviors`.
 
-`sync:behaviors` builds `ink-behaviors` and refreshes the copy. A plain
-`npm install` does not refresh it.
+Two limits: a plain `npm install` does not refresh the copy, and `vitest` in
+watch mode only checks when it starts.
