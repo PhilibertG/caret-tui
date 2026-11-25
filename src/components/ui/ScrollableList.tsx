@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { useListNavigation } from 'ink-behaviors';
 import { useInput } from 'ink';
 import { Box } from './Box.js';
 import { Text } from './Text.js';
@@ -22,61 +23,42 @@ export function ScrollableList<T>({
   onSelect,
   autoScroll = false
 }: ScrollableListProps<T>) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [scrollOffset, setScrollOffset] = useState(0);
   const { theme } = useCaret();
   const { isFocused } = useFocus();
   const focused = isFocused(id);
 
-  // Clamp selectedIndex when items change
+  // Arrows, Home, End, Page Up/Down and the scrolling window come from
+  // ink-behaviors. Every item can be selected here, whatever its fields:
+  // focusDisabled keeps an item that happens to have `disabled: true` reachable.
+  const nav = useListNavigation({
+    items,
+    visibleCount: height,
+    loop: true,
+    focusDisabled: true,
+    isActive: focused,
+  });
+  const selectedIndex = nav.current;
+  const scrollOffset = nav.viewportStart;
+
+  // Follow the end of the list when items are added
   useEffect(() => {
     if (autoScroll && items.length > height) {
-      setScrollOffset(items.length - height);
-      setSelectedIndex(items.length - 1);
-    } else if (items.length > 0) {
-      setSelectedIndex(prev => Math.min(prev, items.length - 1));
-      setScrollOffset(prev => Math.min(prev, Math.max(0, items.length - height)));
-    } else {
-      setSelectedIndex(0);
-      setScrollOffset(0);
+      nav.last();
     }
-  }, [items.length, autoScroll, height]);
+  }, [items.length, autoScroll, height, nav.last]);
 
   useInput((input, key) => {
     if (!focused || items.length === 0) return;
 
-    if (key.upArrow) {
-      const nextIndex = selectedIndex <= 0 ? items.length - 1 : selectedIndex - 1;
-      setSelectedIndex(nextIndex);
-      if (nextIndex < scrollOffset) {
-        setScrollOffset(nextIndex);
-      }
-      // Wrap: jumped to bottom
-      if (nextIndex === items.length - 1) {
-        setScrollOffset(Math.max(0, items.length - height));
-      }
-      return;
-    }
+    if (nav.handleInput(input, key)) return;
 
-    if (key.downArrow) {
-      const nextIndex = selectedIndex >= items.length - 1 ? 0 : selectedIndex + 1;
-      setSelectedIndex(nextIndex);
-      if (nextIndex >= scrollOffset + height) {
-        setScrollOffset(nextIndex - height + 1);
-      }
-      // Wrap: jumped to top
-      if (nextIndex === 0) {
-        setScrollOffset(0);
-      }
-      return;
-    }
-
-    if (key.return && onSelect && items[selectedIndex]) {
-      onSelect(items[selectedIndex]);
+    const selected = items[selectedIndex];
+    if (key.return && onSelect && selected !== undefined) {
+      onSelect(selected);
     }
   }, { isActive: focused });
 
-  const visibleItems = items.slice(scrollOffset, scrollOffset + height);
+  const visibleItems = items.slice(nav.viewportStart, nav.viewportEnd);
 
   // Proportional scrollbar
   const scrollbarInfo = useMemo(() => {

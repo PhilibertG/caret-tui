@@ -30,7 +30,7 @@ export const Pane: React.FC<PaneProps> = ({
       paddingX={showBorder ? 1 : 0}
     >
       {title && (
-        <Box marginTop={-1} paddingX={1} backgroundColor={theme.background}>
+        <Box marginTop={-1} marginX={1} alignSelf="flex-start" backgroundColor={theme.background}>
           <Text bold color={theme.secondary}>{` ${title.toUpperCase()} `}</Text>
         </Box>
       )}

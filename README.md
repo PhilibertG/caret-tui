@@ -21,6 +21,27 @@ Install Caret-TUI and its peer dependencies:
 npm install caret-tui ink react
 ```
 
+Requirements: Node 22 or later, Ink 8 and React 19.3 or later. For Ink 5 and
+React 18, use `caret-tui@1`.
+
+### Command line
+
+Start a new project:
+
+```bash
+npx caret-tui init my-app
+```
+
+Copy the source of components into your project, to edit them freely:
+
+```bash
+npx caret-tui add badge card
+```
+
+Without a name, `add` lets you pick from the list. The files go to
+`src/components/ui`. If a component needs a package your project does not
+have, the command prints the `npm install` line to run.
+
 ## Quick Start
 
 Here is a basic example of how to use Caret-TUI in your terminal application.
@@ -125,3 +146,7 @@ If you want to contribute or run the demo locally:
 2. Install dependencies: `npm install`
 3. Run the showcase: `npm run dev`
 4. Build the project: `npm run build`
+
+`Select` and `ScrollableList` get their keyboard behavior from
+[`ink-behaviors`](https://www.npmjs.com/package/ink-behaviors), a separate
+package installed from npm like any other dependency.
