@@ -125,3 +125,15 @@ If you want to contribute or run the demo locally:
 2. Install dependencies: `npm install`
 3. Run the showcase: `npm run dev`
 4. Build the project: `npm run build`
+
+### Local `ink-behaviors`
+
+`Select` gets its type-to-select from [`ink-behaviors`](../ink-behaviors), which
+is not on npm yet. For now caret-tui uses the folder next to it
+(`../ink-behaviors`), copied into `node_modules` at install time.
+
+- First time, in `../ink-behaviors`: `npm install`
+- Then here, and again after every change in `ink-behaviors`: `npm run sync:behaviors`
+
+`sync:behaviors` builds `ink-behaviors` and refreshes the copy. A plain
+`npm install` does not refresh it.

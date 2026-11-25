@@ -3,7 +3,7 @@ import { useInput } from 'ink';
 import { Box } from './Box.js';
 import { Text } from './Text.js';
 import { useCaret } from '../CaretProvider.js';
-import { useTypeahead } from '../../behaviors/typeahead/index.js';
+import { useTypeahead } from 'ink-behaviors';
 
 // --- Types ---
 
@@ -118,9 +118,8 @@ export function Select<T = string>({
   }, [options.length, effectiveVisible]);
 
   const search = useTypeahead({
-    labels: options.map(o => o.label),
+    items: options,
     current: state.focusIndex,
-    isDisabled: index => options[index]?.disabled ?? false,
     isActive: isActive && typeahead,
     onMatch: index => {
       dispatch({ type: 'focus', index, optionCount: options.length, visibleCount: effectiveVisible });
