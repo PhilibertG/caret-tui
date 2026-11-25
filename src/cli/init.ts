@@ -32,12 +32,15 @@ function packageJsonTemplate(name: string, version: string): string {
       },
       dependencies: {
         'caret-tui': version,
-        ink: '^5.0.0',
-        react: '^18.0.0',
+        ink: '^8.0.0',
+        react: '^19.3.0',
+      },
+      engines: {
+        node: '>=22',
       },
       devDependencies: {
-        '@types/react': '^18.3.0',
-        '@types/node': '^20.0.0',
+        '@types/react': '^19.3.0',
+        '@types/node': '^22.0.0',
         typescript: '^5.3.0',
         tsx: '^4.7.0',
       },
@@ -58,6 +61,7 @@ function tsconfigTemplate(): string {
         strict: true,
         esModuleInterop: true,
         skipLibCheck: true,
+        types: ['node'],
       },
       include: ['src'],
     },

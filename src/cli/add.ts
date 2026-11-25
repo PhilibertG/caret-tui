@@ -46,6 +46,15 @@ function findProjectRoot(): string {
   }
 }
 
+/** Whether the project's package.json lists this package. */
+function isInstalled(projectRoot: string, name: string): boolean {
+  const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  return Boolean(pkg.dependencies?.[name] ?? pkg.devDependencies?.[name]);
+}
+
 /**
  * Rewrites all parent-relative imports (../something) to 'caret-tui'.
  * Local sibling imports (./Something) are kept as-is so the copied file
@@ -55,6 +64,28 @@ function rewriteImports(content: string): string {
   return content
     .replace(/from '(\.\.[^']+)'/g, "from 'caret-tui'")
     .replace(/from "(\.\.[^"]+)"/g, 'from "caret-tui"');
+}
+
+// Packages every caret-tui project already has.
+const PROVIDED = new Set(['react', 'ink', 'caret-tui']);
+
+/**
+ * Returns the npm packages a copied file imports and that the project may
+ * not have, like ink-behaviors. "pkg/sub" and "@scope/pkg/sub" give the
+ * package name only.
+ */
+function findPackageDeps(content: string): string[] {
+  const names: string[] = [];
+  const re = /from ['"]([^'"./][^'"]*)['"]/g;
+  let m;
+  while ((m = re.exec(content)) !== null) {
+    const parts = m[1].split('/');
+    const name = m[1].startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
+    if (!PROVIDED.has(name) && !name.startsWith('node:')) {
+      names.push(name);
+    }
+  }
+  return [...new Set(names)];
 }
 
 /** Returns component names referenced via local sibling imports (./Name.js). */
@@ -73,6 +104,7 @@ function copyComponent(
   sourceDir: string,
   targetDir: string,
   copied: Set<string>,
+  packages: Set<string>,
 ): void {
   if (copied.has(name)) return;
   copied.add(name);
@@ -85,6 +117,9 @@ function copyComponent(
 
   const raw = fs.readFileSync(sourcePath, 'utf-8');
   const content = rewriteImports(raw);
+  for (const dep of findPackageDeps(content)) {
+    packages.add(dep);
+  }
 
   fs.mkdirSync(targetDir, { recursive: true });
   const targetPath = path.join(targetDir, `${name}.tsx`);
@@ -96,7 +131,7 @@ function copyComponent(
 
   // Recursively copy sibling components this file depends on
   for (const dep of findLocalDeps(content)) {
-    copyComponent(dep, sourceDir, targetDir, copied);
+    copyComponent(dep, sourceDir, targetDir, copied, packages);
   }
 }
 
@@ -144,13 +179,22 @@ export async function add(componentArgs: string[]) {
   console.log(`  Copying to ${chalk.cyan(path.relative(process.cwd(), targetDir) || targetDir)}...\n`);
 
   const copied = new Set<string>();
+  const packages = new Set<string>();
   for (const name of toAdd) {
-    copyComponent(name, sourceDir, targetDir, copied);
+    copyComponent(name, sourceDir, targetDir, copied, packages);
   }
 
   console.log('');
   console.log(`  ${chalk.green('✔')} ${copied.size} file(s) added.`);
   console.log('');
+
+  // The copied files may import packages the project does not list yet
+  const missing = [...packages].filter((name) => !isInstalled(projectRoot, name));
+  if (missing.length > 0) {
+    console.log('  ' + chalk.yellow('These components also need:'));
+    console.log(`    ${chalk.cyan(`npm install ${missing.join(' ')}`)}`);
+    console.log('');
+  }
 
   // Show usage hint
   const primary = toAdd[0];
