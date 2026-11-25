@@ -1,6 +1,6 @@
 {
     "name": "caret-tui",
-    "version": "1.1.0",
+    "version": "2.0.0",
     "description": "A lightweight and elegant React UI Kit for modern terminals.",
     "type": "module",
     "main": "dist/index.cjs",
@@ -34,7 +34,9 @@
     "files": [
         "dist",
         "src",
-        "README.md"
+        "!src/**/__tests__",
+        "README.md",
+        "CHANGELOG.md"
     ],
     "scripts": {
         "dev": "tsx src/examples/demo.tsx",
@@ -52,7 +54,16 @@
         "ui-kit",
         "components"
     ],
+    "author": "Philibert Gentien",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/PhilibertG/caret-tui.git"
+    },
+    "homepage": "https://github.com/PhilibertG/caret-tui#readme",
+    "bugs": {
+        "url": "https://github.com/PhilibertG/caret-tui/issues"
+    },
     "peerDependencies": {
         "ink": "^8.0.0",
         "react": "^19.3.0"
