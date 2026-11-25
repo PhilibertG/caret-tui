@@ -11,6 +11,10 @@ const KEY = {
   escape: '\u001B',
   ctrlU: '\u0015',
   ctrlD: '\u0004',
+  pageUp: '\u001B[5~',
+  pageDown: '\u001B[6~',
+  home: '\u001B[H',
+  end: '\u001B[F',
 };
 
 // Laisse à Ink le temps de lire la touche et de redessiner.
@@ -91,13 +95,62 @@ describe('Select', () => {
     expect(s.onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('ne valide pas une option désactivée', async () => {
+  it('ne pose jamais le curseur sur une option désactivée', async () => {
+    const options: SelectOption[] = [
+      { label: 'Annuler', value: 'annuler', disabled: true },
+      { label: 'Banane', value: 'banane' },
+      { label: 'Cerise', value: 'cerise', disabled: true },
+      { label: 'Datte', value: 'datte', disabled: true },
+      { label: 'Figue', value: 'figue' },
+      { label: 'Goyave', value: 'goyave', disabled: true },
+    ];
+    const disabled = options.filter((o) => o.disabled);
+    const s = setup({ options, visibleCount: 3 });
+    await tick();
+    // La première option est désactivée : le curseur commence sur la suivante.
+    expect(s.focused()).toBe('Banane');
+
+    const visited: (string | undefined)[] = [];
+    const keys = [
+      KEY.down, KEY.down, KEY.down, KEY.up, KEY.up, KEY.up,
+      'j', 'j', 'k', 'k', KEY.ctrlD, KEY.ctrlD, KEY.ctrlU, KEY.ctrlU,
+      KEY.pageDown, KEY.pageUp, KEY.end, KEY.home,
+    ];
+    for (const key of keys) {
+      await s.press(key, KEY.enter);
+      visited.push(s.focused());
+    }
+
+    for (const option of disabled) {
+      expect(visited).not.toContain(option.label);
+      expect(s.onSelect).not.toHaveBeenCalledWith(option.value);
+    }
+    // Les flèches passent bien d'une option active à l'autre, en bouclant.
+    expect(visited.slice(0, 3)).toEqual(['Figue', 'Banane', 'Figue']);
+    expect(s.onSelect).toHaveBeenCalledTimes(keys.length);
+  });
+
+  it('n’a pas de curseur et ne valide rien quand tout est désactivé', async () => {
     const s = setup({
-      options: [{ label: 'Annuler', value: 'annuler', disabled: true }, fruits[1]!],
+      options: fruits.map((option) => ({ ...option, disabled: true })),
     });
     await tick();
-    await s.press(KEY.enter);
+    await s.press(KEY.down, KEY.up, KEY.enter);
+    expect(s.focused()).toBeUndefined();
     expect(s.onSelect).not.toHaveBeenCalled();
+  });
+
+  it('va au début et à la fin avec Début et Fin, et d’une page avec Page suivante', async () => {
+    const s = setup({ options: many, visibleCount: 4 });
+    await tick();
+    await s.press(KEY.end);
+    expect(s.focused()).toBe('Option 12');
+    await s.press(KEY.home);
+    expect(s.focused()).toBe('Option 01');
+    await s.press(KEY.pageDown);
+    expect(s.focused()).toBe('Option 05');
+    await s.press(KEY.pageUp);
+    expect(s.focused()).toBe('Option 01');
   });
 
   it('ignore les touches quand isActive est faux', async () => {
@@ -180,7 +233,8 @@ describe('Select', () => {
     it('garde les flèches, ctrl+d et Entrée', async () => {
       const s = setup({ options: actions, typeahead: true });
       await tick();
-      await s.press('e', KEY.down, KEY.down, KEY.enter);
+      // "e" va sur Éditer ; la flèche saute Envoyer, qui est désactivée.
+      await s.press('e', KEY.down, KEY.enter);
       expect(s.onSelect).toHaveBeenCalledWith('exporter');
       await s.press(KEY.ctrlD);
       expect(s.focused()).toBe('Kiosque');

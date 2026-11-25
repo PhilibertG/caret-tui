@@ -1,9 +1,9 @@
-import React, { useReducer, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useInput } from 'ink';
 import { Box } from './Box.js';
 import { Text } from './Text.js';
 import { useCaret } from '../CaretProvider.js';
-import { useTypeahead } from 'ink-behaviors';
+import { useListNavigation, useTypeahead } from 'ink-behaviors';
 
 // --- Types ---
 
@@ -28,67 +28,6 @@ interface SelectProps<T = string> {
   typeahead?: boolean;
 }
 
-// --- Reducer ---
-
-interface SelectState {
-  focusIndex: number;
-  viewportStart: number;
-}
-
-type SelectAction =
-  | { type: 'move_up'; optionCount: number; visibleCount: number }
-  | { type: 'move_down'; optionCount: number; visibleCount: number }
-  | { type: 'page_up'; visibleCount: number }
-  | { type: 'page_down'; optionCount: number; visibleCount: number }
-  | { type: 'go_first' }
-  | { type: 'go_last'; optionCount: number; visibleCount: number }
-  | { type: 'focus'; index: number; optionCount: number; visibleCount: number }
-  | { type: 'reset'; optionCount: number; visibleCount: number };
-
-function clampViewport(focusIndex: number, viewportStart: number, visibleCount: number, optionCount: number): SelectState {
-  let vp = viewportStart;
-  if (focusIndex < vp) {
-    vp = focusIndex;
-  } else if (focusIndex >= vp + visibleCount) {
-    vp = focusIndex - visibleCount + 1;
-  }
-  vp = Math.max(0, Math.min(vp, optionCount - visibleCount));
-  return { focusIndex, viewportStart: vp };
-}
-
-function selectReducer(state: SelectState, action: SelectAction): SelectState {
-  switch (action.type) {
-    case 'move_up': {
-      const next = state.focusIndex <= 0 ? action.optionCount - 1 : state.focusIndex - 1;
-      return clampViewport(next, state.viewportStart, action.visibleCount, action.optionCount);
-    }
-    case 'move_down': {
-      const next = state.focusIndex >= action.optionCount - 1 ? 0 : state.focusIndex + 1;
-      return clampViewport(next, state.viewportStart, action.visibleCount, action.optionCount);
-    }
-    case 'page_up': {
-      const next = Math.max(0, state.focusIndex - action.visibleCount);
-      return clampViewport(next, next, action.visibleCount, state.focusIndex + 1);
-    }
-    case 'page_down': {
-      const next = Math.min(action.optionCount - 1, state.focusIndex + action.visibleCount);
-      return clampViewport(next, state.viewportStart, action.visibleCount, action.optionCount);
-    }
-    case 'go_first':
-      return { focusIndex: 0, viewportStart: 0 };
-    case 'go_last': {
-      const focus = action.optionCount - 1;
-      return clampViewport(focus, state.viewportStart, action.visibleCount, action.optionCount);
-    }
-    case 'focus':
-      return clampViewport(action.index, state.viewportStart, action.visibleCount, action.optionCount);
-    case 'reset':
-      return clampViewport(0, 0, action.visibleCount, action.optionCount);
-    default:
-      return state;
-  }
-}
-
 // --- Component ---
 
 export function Select<T = string>({
@@ -101,29 +40,25 @@ export function Select<T = string>({
   typeahead = false,
 }: SelectProps<T>) {
   const { theme } = useCaret();
-  const effectiveVisible = Math.min(visibleCount, options.length);
   const prevLenRef = useRef(options.length);
 
-  const [state, dispatch] = useReducer(selectReducer, {
-    focusIndex: 0,
-    viewportStart: 0,
-  });
+  // Arrows, Home, End, Page Up/Down, the scrolling window and the skipping
+  // of disabled options all come from ink-behaviors.
+  const nav = useListNavigation({ items: options, visibleCount, loop: true, isActive });
 
-  // Reset when options change length
+  // Back to the top when the number of options changes
   useEffect(() => {
     if (options.length !== prevLenRef.current) {
       prevLenRef.current = options.length;
-      dispatch({ type: 'reset', optionCount: options.length, visibleCount: effectiveVisible });
+      nav.first();
     }
-  }, [options.length, effectiveVisible]);
+  }, [options.length, nav.first]);
 
   const search = useTypeahead({
     items: options,
-    current: state.focusIndex,
+    current: nav.current,
     isActive: isActive && typeahead,
-    onMatch: index => {
-      dispatch({ type: 'focus', index, optionCount: options.length, visibleCount: effectiveVisible });
-    },
+    onMatch: nav.moveTo,
   });
 
   useInput((input, key) => {
@@ -131,22 +66,29 @@ export function Select<T = string>({
 
     // Letters go to the typeahead first; it leaves arrows, Enter and ctrl+key alone.
     if (search.handleInput(input, key)) return;
+    if (nav.handleInput(input, key)) return;
 
-    if (key.upArrow || input === 'k') {
-      if (options.every(o => o.disabled)) return;
-      dispatch({ type: 'move_up', optionCount: options.length, visibleCount: effectiveVisible });
+    // Vim-style shortcuts on top of the standard keys
+    if (input === 'k' && !key.ctrl && !key.meta) {
+      nav.previous();
       return;
     }
-
-    if (key.downArrow || input === 'j') {
-      if (options.every(o => o.disabled)) return;
-      dispatch({ type: 'move_down', optionCount: options.length, visibleCount: effectiveVisible });
+    if (input === 'j' && !key.ctrl && !key.meta) {
+      nav.next();
+      return;
+    }
+    if (key.ctrl && input === 'u') {
+      nav.pageUp();
+      return;
+    }
+    if (key.ctrl && input === 'd') {
+      nav.pageDown();
       return;
     }
 
     if (key.return) {
-      const focused = options[state.focusIndex];
-      if (focused && !focused.disabled) {
+      const focused = options[nav.current];
+      if (focused && nav.canSelect) {
         onSelect(focused.value);
       }
       return;
@@ -156,21 +98,12 @@ export function Select<T = string>({
       onCancel();
       return;
     }
-
-    // Page navigation
-    if (key.ctrl && input === 'u') {
-      dispatch({ type: 'page_up', visibleCount: effectiveVisible });
-      return;
-    }
-    if (key.ctrl && input === 'd') {
-      dispatch({ type: 'page_down', optionCount: options.length, visibleCount: effectiveVisible });
-      return;
-    }
   }, { isActive });
 
-  const visibleOptions = options.slice(state.viewportStart, state.viewportStart + effectiveVisible);
-  const hasMoreAbove = state.viewportStart > 0;
-  const hasMoreBelow = state.viewportStart + effectiveVisible < options.length;
+  const effectiveVisible = nav.viewportEnd - nav.viewportStart;
+  const visibleOptions = options.slice(nav.viewportStart, nav.viewportStart + effectiveVisible);
+  const hasMoreAbove = nav.viewportStart > 0;
+  const hasMoreBelow = nav.viewportStart + effectiveVisible < options.length;
 
   return (
     <Box flexDirection="column">
@@ -183,13 +116,13 @@ export function Select<T = string>({
       <Box flexDirection="column" borderStyle="single" borderColor={theme.border} paddingX={1}>
         {hasMoreAbove && (
           <Box justifyContent="center">
-            <Text color={theme.muted}>▲ {state.viewportStart} more</Text>
+            <Text color={theme.muted}>▲ {nav.viewportStart} more</Text>
           </Box>
         )}
 
         {visibleOptions.map((option, i) => {
-          const absoluteIndex = state.viewportStart + i;
-          const isFocused = absoluteIndex === state.focusIndex;
+          const absoluteIndex = nav.viewportStart + i;
+          const isFocused = absoluteIndex === nav.current;
           const isDisabled = option.disabled ?? false;
 
           return (
@@ -219,7 +152,7 @@ export function Select<T = string>({
 
         {hasMoreBelow && (
           <Box justifyContent="center">
-            <Text color={theme.muted}>▼ {options.length - state.viewportStart - effectiveVisible} more</Text>
+            <Text color={theme.muted}>▼ {options.length - nav.viewportStart - effectiveVisible} more</Text>
           </Box>
         )}
       </Box>
