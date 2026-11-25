@@ -130,6 +130,17 @@ describe('Select', () => {
     expect(s.onSelect).toHaveBeenCalledTimes(keys.length);
   });
 
+  it('affiche une option désactivée placée en fin de liste', async () => {
+    const options = many.map((option, index) => ({ ...option, disabled: index === 11 }));
+    const s = setup({ options, visibleCount: 4 });
+    await tick();
+    await s.press(KEY.end);
+    expect(s.focused()).toBe('Option 11');
+    // La dernière option n'est pas atteignable, mais elle doit rester lisible.
+    expect(s.lastFrame()).toContain('Option 12');
+    expect(s.lastFrame()).not.toContain('▼');
+  });
+
   it('n’a pas de curseur et ne valide rien quand tout est désactivé', async () => {
     const s = setup({
       options: fruits.map((option) => ({ ...option, disabled: true })),
