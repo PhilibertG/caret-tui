@@ -126,16 +126,6 @@ If you want to contribute or run the demo locally:
 3. Run the showcase: `npm run dev`
 4. Build the project: `npm run build`
 
-### Local `ink-behaviors`
-
 `Select` and `ScrollableList` get their keyboard behavior from
-[`ink-behaviors`](../ink-behaviors), which is not on npm yet. For now caret-tui
-uses the folder next to it (`../ink-behaviors`), copied into `node_modules`.
-
-The copy is kept up to date for you: `npm test` (and `vitest` run directly),
-`npm run dev`, `npm run build` and `npm run typecheck` first rebuild
-`ink-behaviors` if its sources changed, then refresh the copy if it differs.
-To do it by hand: `npm run sync:behaviors`.
-
-Two limits: a plain `npm install` does not refresh the copy, and `vitest` in
-watch mode only checks when it starts.
+[`ink-behaviors`](https://www.npmjs.com/package/ink-behaviors), a separate
+package installed from npm like any other dependency.

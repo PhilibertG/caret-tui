@@ -37,15 +37,11 @@
         "README.md"
     ],
     "scripts": {
-        "predev": "npm run sync:behaviors",
         "dev": "tsx src/examples/demo.tsx",
-        "prebuild": "npm run sync:behaviors",
         "build": "tsup",
         "prepublishOnly": "npm run build",
         "test": "vitest run",
-        "pretypecheck": "npm run sync:behaviors",
-        "typecheck": "tsc --noEmit",
-        "sync:behaviors": "node scripts/sync-behaviors.mjs"
+        "typecheck": "tsc --noEmit"
     },
     "keywords": [
         "terminal",
@@ -63,7 +59,7 @@
     },
     "dependencies": {
         "chalk": "^5.3.0",
-        "ink-behaviors": "file:../ink-behaviors"
+        "ink-behaviors": "^0.1.0"
     },
     "devDependencies": {
         "@types/node": "^25.5.2",
